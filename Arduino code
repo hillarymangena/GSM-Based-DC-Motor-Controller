@@ -1,0 +1,102 @@
+#include <SoftwareSerial.h>
+
+char inchar;
+45int a;
+
+SoftwareSerial SIM900(3, 4); // RX and TX pins respectively
+int pwm = 11; // pin able to offer pwm signal for speed control
+int mc2 = 7; // mc is an acronym for motor control
+int mc3 = 8; // pin 10 is for speed control
+
+void setup()
+{
+Serial.begin(19200);
+// Setting the pins to control the motor
+// declaring respective pins as outputs
+pinMode(mc2, OUTPUT);
+pinMode(mc3, OUTPUT);
+analogWrite(pwm, 100); // setting initial values
+digitalWrite(mc2, LOW);
+digitalWrite(mc3, LOW);
+
+// now initialising the gsm module
+SIM900power();
+SIM900.begin(19200);
+delay(15000); // for gsm shiel to get in sync with econet network
+SIM900.print("AT+CMGF=1\r"); // selecting sms text mode instead of binary
+delay(200);
+SIM900.print("AT+CNMI=2,2,0,0,0\r");
+// when sms infor is received by the gsm TX, block out
+// contents of that sms to avoid reccurrance
+46delay(200);
+Serial.println("Ready...");
+}
+
+void SIM900power()
+// powering up the gsm modem
+{
+digitalWrite(5, HIGH);
+delay(2000);
+digitalWrite(5, LOW);
+delay(8000);
+}
+
+void loop()
+{
+// When a character is received from sent sms the
+// following sequence of events occur.
+if(SIM900.available() >0)
+{
+inchar=SIM900.read();
+if (inchar=='*')
+{
+delay(10);
+inchar=SIM900.read();
+if (inchar=='w')
+{
+delay(10);
+47char inchar=SIM900.read();
+if (inchar >= '0' && inchar <= '8')
+{
+int speed = map(inchar, '0', '8', 0, 255);
+analogWrite(pwm, speed);
+}
+else
+{
+digitalWrite(pwm, LOW);
+}
+delay(10);
+inchar=SIM900.read();
+if (inchar=='x')
+{
+inchar=SIM900.read();
+if (inchar=='0')
+{
+digitalWrite(mc2, LOW);
+}
+else if (inchar=='1')
+{
+digitalWrite(mc2, HIGH);
+}
+delay(10);
+48inchar=SIM900.read();
+if (inchar=='y')
+{
+inchar=SIM900.read();
+if (inchar=='0')
+{
+digitalWrite(mc3, LOW);
+}
+else if (inchar=='1')
+{
+digitalWrite(mc3, HIGH);
+}
+delay(10);
+}
+SIM900.println("AT+CMGD=1,4"); // Delete sms to clear
+// memory for next sms.
+}
+}
+}
+}
+}
